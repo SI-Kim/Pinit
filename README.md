@@ -26,11 +26,38 @@ macOS 10.12+
     User can choose log-in or going register page after first view controller. It is able to  join simply by typing an email and password in Register page connected modally with first page.
     After enrolling email, a toast pop-up window show if enrolled successfully. With no button required, can go back to log-in page because register window is connected with log-in page by 'Modally'.
     Whenever registered, can confirm on Authentication tap of Firebase the registered account.
-   
+
+```swift
+if let email = emailTextField.text, let password = passwordTextField.text {
+    Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
+        if let e = error {
+            print(e.localizedDescription)
+        } else {
+            print("Registered successfully.")
+            self.dismiss(animated: true, completion: nil)
+        }
+    }
+}
+```
+
+
     
   - **Log In**
   
     Users can log-in to this app with registered e-mail account. if log-in, screen turned over to the table view.
+    
+```swift
+if let email = emailTextField.text, let password = passwordTextField.text{
+    Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
+        if let e = error {
+            print(e)
+        }else{
+            print("logged-in successfully")
+            self?.performSegue(withIdentifier: const.toMainTableView, sender: self)
+        }
+    }
+}
+```
     
 
 ### 2. Tableview ###
@@ -52,15 +79,66 @@ macOS 10.12+
 
     Once press a picture button on bottom of the view, the screen changed to image selecting page from photo library. User can select any image for saving with this informations. The selected image output be resized 100x100.
 
+```swift
+if (UIImagePickerController.isSourceTypeAvailable(.photoLibrary)) {
+    flagImageSave = false        
+    imagePicker.delegate = self
+    imagePicker.sourceType = .photoLibrary
+    imagePicker.mediaTypes = [kUTTypeImage as String]
+    imagePicker.allowsEditing = true        
+    present(imagePicker, animated: true, completion: nil)
+} else {
+    myAlert("Photo album inaccessable", message: "Application cannot access the photo album.")
+}
+```
 
   - **Alert Before Saving**
 
     When save the information through the 'Save' button on top right corner of the view, if there is no written title, will be pop a alert message. Without title of the information, cannot saved any information.
 
+```swift
+func myAlert(_ title: String, message: String) {
+    let alert = UIAlertController(title: title, message: message, preferredStyle: UIAlertController.Style.alert)
+    let action = UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil)
+    alert.addAction(action)
+    self.present(alert, animated: true, completion: nil)
+    }
+```
+
 
   - **Saving on Firebase**
   
     When pressed the 'Save' button after selecting title, geopoint, image, the informations be uploaded on server. In the database, it be uploaded that the informations of title, image name, date of uploading, geopoint, address. And the image be uploaded on Firestore.
+
+```swift
+func uploadImage() {
+    let storage = Storage.storage()
+    let storageRef = storage.reference()
+    let data = Photo.image!.pngData()
+    let timestamp = Int(NSDate.timeIntervalSinceReferenceDate * 1000)
+    let uniqueImageFileName = "image" + String(timestamp) + ".png"
+    let serverImageRef = storageRef.child(uniqueImageFileName)
+    appDelegate.imageName = uniqueImageFileName
+    let metadata = StorageMetadata()
+    metadata.contentType = "image/png"
+    let uploadTask = serverImageRef.putData(data!, metadata: metadata) {
+                        (metadata, error) in
+        guard let metadata = metadata else {
+            return
+        }
+    let size = metadata.size
+    serverImageRef.downloadURL{
+        (url, error) in
+       
+        guard let downloadURL = url else {
+            return
+       }
+       self.appDelegate.imageURL = downloadURL
+        print("Uploaded successfully!")
+       }
+    }            
+}
+```
 
 
 ### 4. Maps ###
