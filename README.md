@@ -10,7 +10,7 @@ It's contained following functions.
 ## Requirements
 
 ### Running
-macOS 10.12+
+iOS 13.00+
 
 
 ### Building
